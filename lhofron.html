@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Petualangan Teks LHO - Game Tebak Kata Interaktif</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #db2777 100%);
+            min-height: 100vh;
+        }
+        .font-fredoka {
+            font-family: 'Fredoka', cursive, sans-serif;
+        }
+        .card-flip {
+            perspective: 1000px;
+        }
+        .card-inner {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .card-flipped {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            backface-visibility: hidden;
+        }
+        .card-back {
+            transform: rotateY(180deg);
+        }
+        .btn-game {
+            transition: all 0.2s ease;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+        }
+        .btn-game:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 0 rgba(0,0,0,0.2);
+        }
+        .btn-game:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(10px);
+        }
+        @keyframes pulse-light {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .pulse-anim {
+            animation: pulse-light 2s infinite ease-in-out;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .floating {
+            animation: float 3s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-slate-800 flex flex-col justify-between min-height-screen p-2 md:p-4">
+
+    <!-- Header Navigation Bar -->
+    <header class="max-w-4xl mx-auto w-full glass-panel rounded-2xl p-3 md:p-4 mb-4 shadow-lg flex justify-between items-center border-2 border-white/50">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 md:w-12 md:h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-bold text-xl shadow-md floating">
+                <i class="fa-solid fa-magnifying-glass-location"></i>
+            </div>
+            <div>
+                <h1 class="font-fredoka text-lg md:text-2xl text-indigo-900 leading-tight">TEBAK KATA LHO</h1>
+                <p class="text-xs md:text-sm font-semibold text-slate-500">Laporan Hasil Observasi</p>
+            </div>
+        </div>
+        
+        <!-- Audio & Settings -->
+        <div class="flex items-center gap-2">
+            <button id="soundToggle" onclick="toggleSound()" class="w-10 h-10 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full flex items-center justify-center transition shadow-sm">
+                <i class="fa-solid fa-volume-high text-lg" id="soundIcon"></i>
+            </button>
+            <button onclick="showInstructions()" class="w-10 h-10 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-full flex items-center justify-center transition shadow-sm" title="Petunjuk">
+                <i class="fa-solid fa-circle-question text-lg"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-4xl mx-auto w-full flex-grow flex flex-col justify-center items-center">
+
+        <!-- SCREEN 1: MENU UTAMA -->
+        <div id="screenMenu" class="w-full glass-panel rounded-3xl p-6 md:p-10 shadow-2xl text-center border-4 border-white/60">
+            <div class="inline-block bg-indigo-100 text-indigo-700 font-bold px-4 py-1.5 rounded-full text-sm mb-4">
+                🎮 Pembelajaran Bahasa Indonesia SMP/SMA
+            </div>
+            <h2 class="font-fredoka text-3xl md:text-5xl text-indigo-950 mb-3 tracking-wide">
+                Bermain Tebak Kata!
+            </h2>
+            <p class="text-slate-600 max-w-lg mx-auto mb-8 text-sm md:text-base leading-relaxed">
+                Uji pemahamanmu tentang <b>Teks Laporan Hasil Observasi (LHO)</b> melalui tantangan kartu tebak kata, kuis cepat, dan anagram kata!
+            </p>
+
+            <!-- Choice of Game Mode -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <!-- Mode 1 -->
+                <div onclick="selectMode('flashcard')" class="bg-gradient-to-br from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white rounded-2xl p-5 cursor-pointer transform hover:-translate-y-2 transition shadow-lg border-2 border-white/40 flex flex-col items-center">
+                    <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl mb-3">
+                        <i class="fa-solid fa-id-card"></i>
+                    </div>
+                    <h3 class="font-fredoka text-xl mb-1">1. Kartu Rahasia</h3>
+                    <p class="text-xs text-amber-100 text-center">Tebak istilah LHO dari petunjuk & gunakan hint huruf!</p>
+                </div>
+
+                <!-- Mode 2 -->
+                <div onclick="selectMode('quiz')" class="bg-gradient-to-br from-emerald-400 to-teal-600 hover:from-emerald-500 hover:to-teal-700 text-white rounded-2xl p-5 cursor-pointer transform hover:-translate-y-2 transition shadow-lg border-2 border-white/40 flex flex-col items-center">
+                    <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl mb-3">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <h3 class="font-fredoka text-xl mb-1">2. Kuis Cepat</h3>
+                    <p class="text-xs text-emerald-100 text-center">Jawab soal pilihan ganda struktur & ciri bahasa LHO!</p>
+                </div>
+
+                <!-- Mode 3 -->
+                <div onclick="selectMode('unscramble')" class="bg-gradient-to-br from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white rounded-2xl p-5 cursor-pointer transform hover:-translate-y-2 transition shadow-lg border-2 border-white/40 flex flex-col items-center">
+                    <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl mb-3">
+                        <i class="fa-solid fa-arrow-down-a-z"></i>
+                    </div>
+                    <h3 class="font-fredoka text-xl mb-1">3. Susun Kata</h3>
+                    <p class="text-xs text-purple-100 text-center">Susun acakan huruf menjadi kata kunci materi LHO!</p>
+                </div>
+            </div>
+
+            <!-- Start All Game Button -->
+            <button onclick="startGame('all')" class="btn-game bg-indigo-600 hover:bg-indigo-700 text-white font-fredoka text-xl py-4 px-10 rounded-2xl shadow-xl w-full md:w-auto tracking-wide">
+                <i class="fa-solid fa-play mr-2"></i> MAIN KAN SEMUA MODE (PETUALANGAN)
+            </button>
+        </div>
+
+        <!-- SCREEN 2: GAMEPLAY AREA -->
+        <div id="screenGame" class="w-full glass-panel rounded-3xl p-4 md:p-6 shadow-2xl border-4 border-white/60 hidden flex-col">
+            
+            <!-- Game Status Bar -->
+            <div class="flex flex-wrap justify-between items-center gap-2 bg-slate-100/80 p-3 rounded-2xl mb-4 border border-slate-200">
+                <!-- Level Indicator -->
+                <div class="flex items-center gap-2">
+                    <span id="gameModeBadge" class="bg-indigo-600 text-white font-fredoka text-xs md:text-sm px-3 py-1 rounded-xl">
+                        Mode
+                    </span>
+                    <span id="questionProgress" class="font-bold text-slate-700 text-xs md:text-sm">Soal 1/5</span>
+                </div>
+
+                <!-- Timer -->
+                <div class="flex items-center gap-1.5 font-bold text-slate-700 text-sm md:text-base bg-white px-3 py-1 rounded-xl shadow-sm">
+                    <i class="fa-solid fa-clock text-amber-500 animate-spin"></i>
+                    <span id="timerDisplay">20</span>s
+                </div>
+
+                <!-- Score & Lives -->
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-1 font-fredoka text-slate-800 text-base md:text-lg">
+                        <i class="fa-solid fa-star text-amber-400"></i>
+                        <span id="scoreDisplay">0</span>
+                    </div>
+                    <div id="livesContainer" class="flex gap-1 text-red-500 text-sm md:text-base">
+                        <i class="fa-solid fa-heart"></i>
+                        <i class="fa-solid fa-heart"></i>
+                        <i class="fa-solid fa-heart"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GAME CONTENT CONTAINER -->
+            <div id="gameContent" class="flex-grow flex flex-col justify-center items-center py-2">
+                <!-- Content will be injected dynamically -->
+            </div>
+
+            <!-- Feedback Area -->
+            <div id="feedbackMessage" class="mt-4 p-3 rounded-xl font-bold text-center text-sm md:text-base hidden"></div>
+        </div>
+
+        <!-- SCREEN 3: RESULT / SUMMARY -->
+        <div id="screenResult" class="w-full glass-panel rounded-3xl p-6 md:p-10 shadow-2xl text-center border-4 border-white/60 hidden">
+            <div class="w-24 h-24 mx-auto mb-4 bg-amber-100 rounded-full flex items-center justify-center text-amber-500 text-5xl floating">
+                <i class="fa-solid fa-trophy" id="resultIcon"></i>
+            </div>
+            
+            <h2 class="font-fredoka text-3xl md:text-4xl text-slate-900 mb-2" id="resultTitle">Permainan Selesai!</h2>
+            <p class="text-slate-600 mb-6 text-sm md:text-base" id="resultSubtitle">Hasil evaluasi pembelajaran Teks LHO kamu</p>
+
+            <!-- Score Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+                <div class="bg-indigo-50 border border-indigo-200 p-4 rounded-2xl">
+                    <span class="block text-xs font-bold text-indigo-400 uppercase">Skor Akhir</span>
+                    <span class="font-fredoka text-2xl md:text-3xl text-indigo-700" id="finalScore">0</span>
+                </div>
+                <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl">
+                    <span class="block text-xs font-bold text-emerald-500 uppercase">Benar</span>
+                    <span class="font-fredoka text-2xl md:text-3xl text-emerald-600" id="finalCorrect">0</span>
+                </div>
+                <div class="bg-rose-50 border border-rose-200 p-4 rounded-2xl">
+                    <span class="block text-xs font-bold text-rose-400 uppercase">Salah</span>
+                    <span class="font-fredoka text-2xl md:text-3xl text-rose-600" id="finalWrong">0</span>
+                </div>
+                <div class="bg-amber-50 border border-amber-200 p-4 rounded-2xl">
+                    <span class="block text-xs font-bold text-amber-500 uppercase">Akurasi</span>
+                    <span class="font-fredoka text-2xl md:text-3xl text-amber-600" id="finalAccuracy">0%</span>
+                </div>
+            </div>
+
+            <!-- Review / Tips Material -->
+            <div class="bg-slate-50 border border-slate-200 p-4 rounded-2xl mb-8 text-left max-h-48 overflow-y-auto">
+                <h4 class="font-bold text-indigo-900 text-sm mb-2"><i class="fa-solid fa-book-bookmark mr-2"></i>Rangkuman Materi Teks LHO:</h4>
+                <ul class="text-xs md:text-sm text-slate-600 space-y-1.5 list-disc pl-4">
+                    <li><b>Pengertian:</b> Teks yang memuat hasil penjabaran umum berdasarkan observasi/pengamatan langsung.</li>
+                    <li><b>Struktur Utama:</b> Pernyataan/Definisi Umum → Deskripsi Bagian → Deskripsi Manfaat / Kesimpulan.</li>
+                    <li><b>Ciri Bahasa:</b> Menggunakan kalimat definisi (adalah, merupakan), verba relasional, istilah ilmiah/teknis, serta fakta objektif.</li>
+                </ul>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <button onclick="backToMenu()" class="btn-game bg-slate-600 hover:bg-slate-700 text-white font-fredoka px-6 py-3 rounded-xl">
+                    <i class="fa-solid fa-house mr-2"></i> Menu Utama
+                </button>
+                <button onclick="restartCurrentGame()" class="btn-game bg-indigo-600 hover:bg-indigo-700 text-white font-fredoka px-8 py-3 rounded-xl">
+                    <i class="fa-solid fa-rotate-right mr-2"></i> Main Lagi
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-4xl mx-auto w-full text-center py-3 text-xs text-white/80 font-medium">
+        Media Pembelajaran Interaktif Bahasa Indonesia • Tema Teks Laporan Hasil Observasi (LHO)
+    </footer>
+
+    <!-- INSTRUCTION MODAL -->
+    <div id="modalInstructions" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 hidden">
+        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl text-slate-800 relative">
+            <button onclick="closeInstructions()" class="absolute top-4 right-4 w-8 h-8 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center text-slate-600">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h3 class="font-fredoka text-2xl text-indigo-900 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-circle-info text-amber-500"></i> Cara Bermain
+            </h3>
+            <div class="space-y-3 text-sm text-slate-600">
+                <p><b>1. Kartu Rahasia:</b> Baca deskripsi materi, lalu tebak kata kunci yang sesuai. Klik tombol <i>Hint</i> jika butuh petunjuk huruf.</p>
+                <p><b>2. Kuis Cepat:</b> Pilihlah satu jawaban benar dari 4 opsi jawaban sebelum waktu habis.</p>
+                <p><b>3. Susun Kata:</b> Susun kembali huruf-huruf acak dengan mengeklik/mengetik hingga membentuk istilah LHO yang tepat.</p>
+                <p><b>4. Nyawa & Waktu:</b> Kamu memiliki 3 nyawa. Setiap jawaban salah atau waktu habis akan mengurangi 1 nyawa!</p>
+            </div>
+            <button onclick="closeInstructions()" class="btn-game bg-indigo-600 hover:bg-indigo-700 text-white font-fredoka w-full py-3 rounded-xl mt-6">
+                Saya Mengerti!
+            </button>
+        </div>
+    </div>
+
+    <!-- AUDIO SYNTHESIS (Web Audio API) -->
+    <script>
+        // Web Audio Context for SFX
+        let audioCtx = null;
+        let isSoundOn = true;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (!isSoundOn) return;
+            initAudio();
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'correct') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1); // E5
+                osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.2); // G5
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now); // A3
+                osc.frequency.setValueAtTime(164.81, now + 0.15); // E3
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                osc.start(now);
+                osc.stop(now + 0.35);
+            } else if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } else if (type === 'win') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.setValueAtTime(554.37, now + 0.1);
+                osc.frequency.setValueAtTime(659.25, now + 0.2);
+                osc.frequency.setValueAtTime(880, now + 0.3);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                osc.start(now);
+                osc.stop(now + 0.6);
+            }
+        }
+
+        function toggleSound() {
+            isSoundOn = !isSoundOn;
+            const soundIcon = document.getElementById('soundIcon');
+            if (isSoundOn) {
+                soundIcon.className = 'fa-solid fa-volume-high text-lg';
+            } else {
+                soundIcon.className = 'fa-solid fa-volume-xmark text-lg text-slate-400';
+            }
+        }
+
+        function showInstructions() {
+            playSound('click');
+            document.getElementById('modalInstructions').classList.remove('hidden');
+        }
+
+        function closeInstructions() {
+            playSound('click');
+            document.getElementById('modalInstructions').classList.add('hidden');
+        }
+    </script>
+
+    <!-- GAME DATA & LOGIC -->
+    <script>
+        // Database Soal Teks LHO
+        const questionsData = [
+            // Mode 1: Flashcard / Tebak Kata
+            {
+                mode: 'flashcard',
+                clue: "Bagian awal teks LHO yang berisi pengertian umum, deskripsi awal, atau klasifikasi objek yang diamati.",
+                answer: "PERNYATAAN UMUM",
+                hint: "Sering disebut juga Definisi Umum"
+            },
+            {
+                mode: 'flashcard',
+                clue: "Sifat utama Teks LHO yang berarti harus sesuai dengan kenyataan riil dan tidak rekaan/karangan.",
+                answer: "FAKTA",
+                hint: "Lawan kata dari Opini/Mitos"
+            },
+            {
+                mode: 'flashcard',
+                clue: "Sifat teks LHO yang tidak memihak, netral, dan tidak dipengaruhi pendapat pribadi penulis.",
+                answer: "OBJEKTIF",
+                hint: "Berlawanan dengan kata Subjektif"
+            },
+            {
+                mode: 'flashcard',
+                clue: "Struktur LHO yang menjelaskan rincian rinci mengenai ciri-ciri, bagian, atau sifat khusus dari objek.",
+                answer: "DESKRIPSI BAGIAN",
+                hint: "Membedah objek secara mendetail"
+            },
+
+            // Mode 2: Quiz Pilihan Ganda
+            {
+                mode: 'quiz',
+                question: "Manakah di bawah ini yang merupakan kalimat definisi dalam Teks LHO?",
+                options: [
+                    "Lumba-lumba mamalia laut yang sangat cerdas.",
+                    "Lumba-lumba adalah mamalia laut yang bernapas dengan paru-paru.",
+                    "Lumba-lumba berenang sangat cepat di lautan luas.",
+                    "Lumba-lumba memiliki kulit yang licin dan indah."
+                ],
+                answerIndex: 1,
+                explanation: "Kalimat definisi ditandai dengan verba penghubung seperti 'adalah', 'merupakan', atau 'ialah'."
+            },
+            {
+                mode: 'quiz',
+                question: "Penulisan kata depan (preposisi) 'di' yang TEPAT pada Teks LHO adalah...",
+                options: [
+                    "dimandikan",
+                    "di hutan",
+                    "dilihat",
+                    "dikelompokkan"
+                ],
+                answerIndex: 1,
+                explanation: "Preposisi 'di' yang menunjukkan tempat harus ditulis terpisah dari kata yang mengikutinya ('di hutan')."
+            },
+            {
+                mode: 'quiz',
+                question: "Verba yang digunakan untuk menjelaskan hubungan sebab-akibat atau klasifikasi dalam LHO disebut...",
+                options: [
+                    "Verba Transitif",
+                    "Verba Relasional",
+                    "Verba Imperatif",
+                    "Verba Mental"
+                ],
+                answerIndex: 1,
+                explanation: "Verba relasional berfungsi menghubungkan subjek dengan pelengkap/penjelas (contoh: 'terdiri atas', 'meliputi')."
+            },
+            {
+                mode: 'quiz',
+                question: "Struktur LHO yang memuat manfaat/kegunaan objek yang diamati bagi kehidupan dinamakan...",
+                options: [
+                    "Pernyataan Umum",
+                    "Deskripsi Bagian",
+                    "Deskripsi Manfaat",
+                    "Interpretasi"
+                ],
+                answerIndex: 2,
+                explanation: "Deskripsi manfaat berisi faedah atau fungsi objek dalam kehidupan nyata."
+            },
+
+            // Mode 3: Unscramble / Susun Kata
+            {
+                mode: 'unscramble',
+                scrambled: "O - B - S - E - R - V - A - S - I",
+                answer: "OBSERVASI",
+                hint: "Kegiatan pengamatan secara langsung terhadap suatu objek."
+            },
+            {
+                mode: 'unscramble',
+                scrambled: "K - L - A - S - I - F - I - K - A - S - I",
+                answer: "KLASIFIKASI",
+                hint: "Pengelompokan objek berdasarkan kriteria atau ciri tertentu."
+            },
+            {
+                mode: 'unscramble',
+                scrambled: "I - S - T - I - L - A - H",
+                answer: "ISTILAH",
+                hint: "Kata khusus yang digunakan dalam bidang keilmuan tertentu."
+            },
+            {
+                mode: 'unscramble',
+                scrambled: "S - I - M - P - E - L",
+                answer: "SIMPEL",
+                hint: "Jenis kalimat yang hanya terdiri atas satu klausa (kalimat tunggal)."
+            }
+        ];
+
+        // Game State Variables
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let lives = 3;
+        let timer = null;
+        let timeLeft = 20;
+        let correctCount = 0;
+        let wrongCount = 0;
+        let selectedGameMode = 'all'; // 'flashcard', 'quiz', 'unscramble', or 'all'
+
+        // DOM Elements
+        const screenMenu = document.getElementById('screenMenu');
+        const screenGame = document.getElementById('screenGame');
+        const screenResult = document.getElementById('screenResult');
+        const gameContent = document.getElementById('gameContent');
+        const feedbackMessage = document.getElementById('feedbackMessage');
+
+        function selectMode(mode) {
+            playSound('click');
+            selectedGameMode = mode;
+            startGame(mode);
+        }
+
+        function startGame(mode) {
+            playSound('click');
+            selectedGameMode = mode;
+            
+            // Filter questions based on mode
+            if (mode === 'all') {
+                currentQuestions = [...questionsData].sort(() => Math.random() - 0.5);
+            } else {
+                currentQuestions = questionsData.filter(q => q.mode === mode).sort(() => Math.random() - 0.5);
+            }
+
+            // Reset States
+            currentQuestionIndex = 0;
+            score = 0;
+            lives = 3;
+            correctCount = 0;
+            wrongCount = 0;
+
+            // Update UI State
+            updateLivesDisplay();
+            document.getElementById('scoreDisplay').innerText = score;
+
+            // Switch Screen
+            screenMenu.classList.add('hidden');
+            screenResult.classList.add('hidden');
+            screenGame.classList.remove('hidden');
+            screenGame.classList.add('flex');
+
+            loadQuestion();
+        }
+
+        function updateLivesDisplay() {
+            const container = document.getElementById('livesContainer');
+            container.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                if (i < lives) {
+                    container.innerHTML += '<i class="fa-solid fa-heart text-red-500"></i>';
+                } else {
+                    container.innerHTML += '<i class="fa-regular fa-heart text-slate-300"></i>';
+                }
+            }
+        }
+
+        function startTimer() {
+            clearInterval(timer);
+            timeLeft = 25;
+            document.getElementById('timerDisplay').innerText = timeLeft;
+
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timerDisplay').innerText = timeLeft;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    handleTimeOut();
+                }
+            }, 1000);
+        }
+
+        function handleTimeOut() {
+            playSound('wrong');
+            showFeedback(false, "Waktu Habis!");
+            wrongCount++;
+            lives--;
+            updateLivesDisplay();
+
+            setTimeout(() => {
+                checkNextQuestion();
+            }, 1500);
+        }
+
+        function loadQuestion() {
+            feedbackMessage.classList.add('hidden');
+            if (currentQuestionIndex >= currentQuestions.length || lives <= 0) {
+                endGame();
+                return;
+            }
+
+            startTimer();
+
+            const q = currentQuestions[currentQuestionIndex];
+            
+            // Update Progress Header
+            document.getElementById('questionProgress').innerText = `Soal ${currentQuestionIndex + 1}/${currentQuestions.length}`;
+            
+            const badge = document.getElementById('gameModeBadge');
+            if (q.mode === 'flashcard') {
+                badge.innerText = "Kartu Tebak Kata";
+                badge.className = "bg-amber-500 text-white font-fredoka text-xs md:text-sm px-3 py-1 rounded-xl";
+                renderFlashcard(q);
+            } else if (q.mode === 'quiz') {
+                badge.innerText = "Kuis Cepat";
+                badge.className = "bg-emerald-600 text-white font-fredoka text-xs md:text-sm px-3 py-1 rounded-xl";
+                renderQuiz(q);
+            } else if (q.mode === 'unscramble') {
+                badge.innerText = "Susun Kata";
+                badge.className = "bg-purple-600 text-white font-fredoka text-xs md:text-sm px-3 py-1 rounded-xl";
+                renderUnscramble(q);
+            }
+        }
+
+        // ================= RENDER MODES ================= //
+
+        // 1. RENDER FLASHCARD MODE
+        function renderFlashcard(q) {
+            gameContent.innerHTML = `
+                <div class="w-full max-w-lg flex flex-col items-center">
+                    <div class="bg-gradient-to-br from-amber-100 to-orange-100 border-2 border-amber-300 rounded-2xl p-5 mb-5 text-center shadow-md w-full">
+                        <span class="inline-block bg-amber-500 text-white text-xs font-bold px-2.5 py-0.5 rounded-full mb-2">Petunjuk/Clue</span>
+                        <p class="text-slate-800 font-semibold text-base md:text-lg leading-snug">${q.clue}</p>
+                    </div>
+
+                    <!-- Input Tebakan -->
+                    <div class="w-full mb-4">
+                        <input type="text" id="flashcardInput" placeholder="Ketik kata tebakanmu..." class="w-full text-center uppercase font-fredoka text-xl py-3 px-4 rounded-2xl border-2 border-slate-300 focus:border-amber-500 focus:outline-none shadow-sm" autocomplete="off">
+                    </div>
+
+                    <div id="hintBox" class="hidden text-xs text-amber-700 bg-amber-50 p-2 rounded-xl mb-3 border border-amber-200">
+                        <b>Hint:</b> ${q.hint}
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2 w-full">
+                        <button onclick="showFlashcardHint()" class="btn-game bg-amber-100 hover:bg-amber-200 text-amber-800 font-fredoka py-3 px-4 rounded-xl text-sm w-1/3">
+                            <i class="fa-solid fa-lightbulb mr-1"></i> Hint
+                        </button>
+                        <button onclick="submitFlashcard()" class="btn-game bg-amber-500 hover:bg-amber-600 text-white font-fredoka py-3 px-4 rounded-xl text-sm w-2/3">
+                            Jawab <i class="fa-solid fa-paper-plane ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Enter key listener
+            document.getElementById('flashcardInput').addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') submitFlashcard();
+            });
+        }
+
+        function showFlashcardHint() {
+            playSound('click');
+            document.getElementById('hintBox').classList.remove('hidden');
+        }
+
+        function submitFlashcard() {
+            const input = document.getElementById('flashcardInput').value.trim().toUpperCase();
+            const currentQ = currentQuestions[currentQuestionIndex];
+
+            if (!input) return;
+
+            clearInterval(timer);
+
+            if (input === currentQ.answer.toUpperCase()) {
+                handleCorrectAnswer(150);
+            } else {
+                handleWrongAnswer(`Jawaban salah! Yang benar: <b>${currentQ.answer}</b>`);
+            }
+        }
+
+        // 2. RENDER QUIZ MODE
+        function renderQuiz(q) {
+            let optionsHTML = '';
+            q.options.forEach((opt, idx) => {
+                optionsHTML += `
+                    <button onclick="submitQuiz(${idx})" class="btn-game bg-white hover:bg-emerald-50 text-slate-700 border-2 border-slate-200 hover:border-emerald-400 font-semibold p-3.5 rounded-2xl text-left text-sm md:text-base transition flex items-center gap-3">
+                        <span class="w-7 h-7 bg-emerald-100 text-emerald-700 font-bold rounded-lg flex items-center justify-center text-xs flex-shrink-0">${String.fromCharCode(65 + idx)}</span>
+                        <span>${opt}</span>
+                    </button>
+                `;
+            });
+
+            gameContent.innerHTML = `
+                <div class="w-full max-w-lg flex flex-col items-center">
+                    <div class="bg-white border-2 border-emerald-200 rounded-2xl p-5 mb-5 text-center shadow-md w-full">
+                        <h3 class="font-bold text-slate-800 text-base md:text-lg">${q.question}</h3>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-3 w-full">
+                        ${optionsHTML}
+                    </div>
+                </div>
+            `;
+        }
+
+        function submitQuiz(selectedIdx) {
+            clearInterval(timer);
+            const currentQ = currentQuestions[currentQuestionIndex];
+
+            if (selectedIdx === currentQ.answerIndex) {
+                handleCorrectAnswer(100);
+            } else {
+                handleWrongAnswer(`Salah! ${currentQ.explanation}`);
+            }
+        }
+
+        // 3. RENDER UNSCRAMBLE MODE
+        let currentUnscrambleInput = "";
+
+        function renderUnscramble(q) {
+            currentUnscrambleInput = "";
+            const letters = q.answer.split('').sort(() => Math.random() - 0.5);
+
+            let lettersBtnHTML = '';
+            letters.forEach((char, idx) => {
+                lettersBtnHTML += `
+                    <button id="letterBtn_${idx}" onclick="clickLetter('${char}', ${idx})" class="w-10 h-10 md:w-12 md:h-12 bg-purple-500 hover:bg-purple-600 text-white font-fredoka text-lg rounded-xl shadow-md transition transform active:scale-95">
+                        ${char}
+                    </button>
+                `;
+            });
+
+            gameContent.innerHTML = `
+                <div class="w-full max-w-lg flex flex-col items-center">
+                    <p class="text-xs text-purple-700 font-bold bg-purple-50 px-3 py-1 rounded-full mb-3 border border-purple-200">
+                        Hint: ${q.hint}
+                    </p>
+
+                    <!-- Answer Slots -->
+                    <div id="unscrambleDisplay" class="min-h-[56px] w-full bg-slate-100 border-2 border-dashed border-purple-300 rounded-2xl flex items-center justify-center gap-2 p-2 mb-4 font-fredoka text-2xl tracking-widest text-purple-900">
+                        _ _ _ _
+                    </div>
+
+                    <!-- Scrambled Letters -->
+                    <div class="flex flex-wrap justify-center gap-2 mb-6">
+                        ${lettersBtnHTML}
+                    </div>
+
+                    <!-- Reset & Submit Buttons -->
+                    <div class="flex gap-2 w-full">
+                        <button onclick="resetUnscrambleLetters()" class="btn-game bg-slate-200 hover:bg-slate-300 text-slate-700 font-fredoka py-3 px-4 rounded-xl text-sm w-1/3">
+                            <i class="fa-solid fa-rotate-left mr-1"></i> Reset
+                        </button>
+                        <button onclick="submitUnscramble()" class="btn-game bg-purple-600 hover:bg-purple-700 text-white font-fredoka py-3 px-4 rounded-xl text-sm w-2/3">
+                            Kirim Jawaban <i class="fa-solid fa-check ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            updateUnscrambleDisplay();
+        }
+
+        function clickLetter(char, idx) {
+            playSound('click');
+            const btn = document.getElementById(`letterBtn_${idx}`);
+            if (btn.disabled) return;
+
+            btn.disabled = true;
+            btn.classList.add('opacity-30', 'cursor-not-allowed');
+            currentUnscrambleInput += char;
+            updateUnscrambleDisplay();
+        }
+
+        function resetUnscrambleLetters() {
+            playSound('click');
+            const currentQ = currentQuestions[currentQuestionIndex];
+            renderUnscramble(currentQ);
+        }
+
+        function updateUnscrambleDisplay() {
+            const display = document.getElementById('unscrambleDisplay');
+            if (currentUnscrambleInput.length === 0) {
+                display.innerText = "Klik huruf di bawah...";
+                display.classList.add('text-slate-400', 'text-sm');
+            } else {
+                display.innerText = currentUnscrambleInput;
+                display.classList.remove('text-slate-400', 'text-sm');
+            }
+        }
+
+        function submitUnscramble() {
+            clearInterval(timer);
+            const currentQ = currentQuestions[currentQuestionIndex];
+
+            if (currentUnscrambleInput.toUpperCase() === currentQ.answer.toUpperCase()) {
+                handleCorrectAnswer(120);
+            } else {
+                handleWrongAnswer(`Susunan salah! Jawaban yang benar: <b>${currentQ.answer}</b>`);
+            }
+        }
+
+        // ================= ANSWER HANDLING ================= //
+
+        function handleCorrectAnswer(points) {
+            playSound('correct');
+            score += points + (timeLeft * 2);
+            correctCount++;
+            document.getElementById('scoreDisplay').innerText = score;
+
+            showFeedback(true, "Hebat! Jawaban Kamu Benar! 🎉");
+
+            setTimeout(() => {
+                checkNextQuestion();
+            }, 1500);
+        }
+
+        function handleWrongAnswer(msg) {
+            playSound('wrong');
+            wrongCount++;
+            lives--;
+            updateLivesDisplay();
+
+            showFeedback(false, msg);
+
+            setTimeout(() => {
+                checkNextQuestion();
+            }, 2000);
+        }
+
+        function showFeedback(isSuccess, message) {
+            feedbackMessage.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-800', 'bg-rose-100', 'text-rose-800');
+            if (isSuccess) {
+                feedbackMessage.classList.add('bg-emerald-100', 'text-emerald-800', 'border', 'border-emerald-300');
+            } else {
+                feedbackMessage.classList.add('bg-rose-100', 'text-rose-800', 'border', 'border-rose-300');
+            }
+            feedbackMessage.innerHTML = message;
+        }
+
+        function checkNextQuestion() {
+            currentQuestionIndex++;
+            loadQuestion();
+        }
+
+        // ================= END GAME & SUMMARY ================= //
+
+        function endGame() {
+            clearInterval(timer);
+            screenGame.classList.add('hidden');
+            screenGame.classList.remove('flex');
+            screenResult.classList.remove('hidden');
+
+            const total = correctCount + wrongCount;
+            const accuracy = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+
+            document.getElementById('finalScore').innerText = score;
+            document.getElementById('finalCorrect').innerText = correctCount;
+            document.getElementById('finalWrong').innerText = wrongCount;
+            document.getElementById('finalAccuracy').innerText = accuracy + '%';
+
+            const resultIcon = document.getElementById('resultIcon');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultSubtitle = document.getElementById('resultSubtitle');
+
+            if (lives > 0 && accuracy >= 60) {
+                playSound('win');
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                resultIcon.className = 'fa-solid fa-trophy text-amber-500 text-5xl';
+                resultTitle.innerText = "Luar Biasa! 🎉";
+                resultSubtitle.innerText = "Kamu telah menguasai materi Teks Laporan Hasil Observasi!";
+            } else {
+                resultIcon.className = 'fa-solid fa-face-frown text-indigo-400 text-5xl';
+                resultTitle.innerText = "Tetap Semangat! 💪";
+                resultSubtitle.innerText = "Coba lagi untuk meningkatkan pemahaman materi LHO kamu.";
+            }
+        }
+
+        function backToMenu() {
+            playSound('click');
+            screenResult.classList.add('hidden');
+            screenMenu.classList.remove('hidden');
+        }
+
+        function restartCurrentGame() {
+            playSound('click');
+            startGame(selectedGameMode);
+        }
+    </script>
+</body>
+</html>
